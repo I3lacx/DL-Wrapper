@@ -1,0 +1,112 @@
+variables:
+  PYTHON_IMAGE: python:3.8.10
+
+stages:
+  - linting
+  - testing
+  - deploy
+
+default:
+  image: $PYTHON_IMAGE-slim-buster
+
+  before_script:
+    - apt-get update
+    - pip install virtualenv
+    - virtualenv venv
+    - source venv/bin/activate
+    - pip install -e .[dev]
+
+pylint:
+  stage: linting
+
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+  allow_failure: true
+
+  script:
+    - pylint --fail-under=8 uam
+
+mypy:
+  stage: linting
+
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+  allow_failure: true
+
+  script:
+    - mypy uam
+
+formatters:
+  stage: linting
+
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+  allow_failure: true
+
+  script:
+    - isort --check-only --diff uam tests examples
+    - black --check --diff uam tests examples -l 120
+
+pytest:
+  stage: testing
+
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+  image: $PYTHON_IMAGE
+
+  script:
+    - coverage run -m pytest tests/
+    - coverage report
+
+pages:
+  stage: deploy
+
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+  image: $PYTHON_IMAGE
+
+  script:
+    - sphinx-build -b html docs/ public
+
+  artifacts:
+    paths:
+      - public
+
+docker-image:
+  stage: deploy
+
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+  #docker in docker
+  image: docker:18.09
+
+  variables:
+    IMAGE_NAME: hariivi/test-repo
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+
+  # docker deamon service
+  services:
+    - docker:18.09-dind
+
+  before_script:
+    - docker login -u $DOCKER_ID -p $DOCKER_PASS
+    - docker info
+
+  script:
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_REF_NAME .
+    - docker push $IMAGE_NAME:$CI_COMMIT_REF_NAME
