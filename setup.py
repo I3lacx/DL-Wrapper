@@ -1,14 +1,14 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="uam",
+    name="dlv",
     version="0.1",
-    description="Template for a Python package",
-    author="UAM",
-    author_email="harisankar.babu@ivi.fraunhofer.de",
+    description="Deep Learning Vrapper",
+    author="I3lacx",
+    author_email="MaxOtteAI@gmail.com",
     keywords="python",
     license="MIT",
-    url="https://gitlab-extern.ivi.fraunhofer.de/uam/template-project",
+    url="https://github.com/I3lacx/DL-Wrapper",
     classifiers=[
         "Development Status :: 1 - Alpha",
         "Intended Audience :: Researchers",
@@ -20,7 +20,7 @@ setup(
     ],
     packages=find_packages(),
     package_data={
-        "uam": ["core/data/*.yaml"],
+        "dlv": ["core/data/*.yaml"],
     },
     install_requires=[
         "numpy>=1.23.2",
